@@ -37,7 +37,9 @@ services:
       - data_network
 
   airflow:
-    image: apache/airflow:2.9.1-python3.12
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     container_name: logistics_airflow
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -45,11 +47,14 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
       - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - SPARK_MINIO_USER=${SPARK_MINIO_USER}
+      - SPARK_MINIO_PASSWORD=${SPARK_MINIO_PASSWORD}
     ports:
       - "8080:8080"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
+      - ./jobs:/opt/airflow/jobs
     command: >
       bash -c "pip install boto3 requests &&
       airflow db migrate &&
