@@ -4,3 +4,5 @@ great_expectations
 fastapi
 uvicorn
 faker
+pyarrow
+pandas
