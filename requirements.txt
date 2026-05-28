@@ -1,0 +1,6 @@
+dbt-postgres
+pyspark
+great_expectations
+fastapi
+uvicorn
+faker

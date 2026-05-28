@@ -216,3 +216,51 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ==========================================
+# Adições para o Smart Logistics Hub
+# ==========================================
+
+# Segredos e Configurações Locais Extras
+*.env
+credentials.json
+secret.yaml
+
+# Dados Locais (Data Lake Simulado)
+# Ignora arquivos de dados, mas mantém a estrutura de pastas no GitHub
+data/bronze/*
+!data/bronze/.gitkeep
+data/silver/*
+!data/silver/.gitkeep
+data/gold/*
+!data/gold/.gitkeep
+
+# Terraform (IaC)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+crash.log
+.terraform.lock.hcl 
+
+# dbt (Data Build Tool)
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Apache Airflow & PySpark
+airflow-webserver.pid
+airflow.cfg
+airflow.db
+logs/
+spark-warehouse/
+derby.log
+metastore_db/
+
+# Great Expectations
+great_expectations/uncommitted/
+
+# OS specific files
+.DS_Store
+Thumbs.db
