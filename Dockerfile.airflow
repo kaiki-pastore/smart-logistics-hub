@@ -11,9 +11,12 @@ ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 USER airflow
 
+# Ensure a temp dir with enough space for large wheel extraction
+RUN mkdir -p /opt/airflow/.tmp && \
+    TMPDIR=/opt/airflow/.tmp pip install --no-cache-dir pyspark==3.5.1
+
 RUN pip install --no-cache-dir \
     boto3 \
     requests \
-    pyspark==3.5.1 \
     great_expectations \
     pyarrow
