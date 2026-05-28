@@ -27,6 +27,7 @@ services:
       - minio_data:/data
     networks:
       - data_network
+      - logistics_net
 
   api-mock:
     build: ./api-mock
@@ -71,10 +72,25 @@ services:
       api-mock:
         condition: service_started
 
+  analytics-api:
+    build: ./analytics-api
+    container_name: logistics_analytics_api
+    ports:
+      - "8001:8001"
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    depends_on:
+      - minio
+    networks:
+      - logistics_net
+
 volumes:
   pg_data:
   minio_data:
 
 networks:
   data_network:
+    driver: bridge
+  logistics_net:
     driver: bridge
