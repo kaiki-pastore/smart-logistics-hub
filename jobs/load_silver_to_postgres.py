@@ -33,8 +33,8 @@ download_jar(AWS_SDK_URL, AWS_SDK_JAR)
 os.environ['PYSPARK_SUBMIT_ARGS'] = f'--jars {HADOOP_AWS_JAR},{AWS_SDK_JAR} pyspark-shell'
 os.environ["_JAVA_OPTIONS"] = "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Xmx2g"
 
-MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER", "admin")
-MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD", "admin")
+MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER")
+MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 
@@ -62,12 +62,25 @@ def save_to_postgres(df, table_name):
 def load_silver_data():
     """Reads clean Silver Parquet files and loads them raw into Postgres for dbt staging."""
     print("Extracting Silver Inventory...")
-    df_inventory = spark.read.parquet("s3a://silver/inventory/")
-    save_to_postgres(df_inventory, "raw_inventory")
+    try:
+        df_inventory = spark.read.parquet("s3a://silver/inventory/")
+        save_to_postgres(df_inventory, "raw_inventory")
+    except Exception as e:
+        print(f"Skipping inventory (not found): {e}")
 
     print("Extracting Silver Telemetry...")
-    df_telemetry = spark.read.parquet("s3a://silver/telemetry/")
-    save_to_postgres(df_telemetry, "raw_telemetry")
+    try:
+        df_telemetry = spark.read.parquet("s3a://silver/telemetry/")
+        save_to_postgres(df_telemetry, "raw_telemetry")
+    except Exception as e:
+        print(f"Skipping telemetry (not found): {e}")
+
+    print("Extracting Silver Fleet...")
+    try:
+        df_fleet = spark.read.parquet("s3a://silver/fleet/")
+        save_to_postgres(df_fleet, "raw_fleet")
+    except Exception as e:
+        print(f"Skipping fleet (not found): {e}")
 
 if __name__ == "__main__":
     try:

@@ -1,27 +1,21 @@
 FROM apache/airflow:2.9.1-python3.12
 
-# Switch to root to install system-level dependencies (Java and Utilities)
 USER root
 
-# Install Java (Required for PySpark), procps (Required for Spark memory tracking), and curl (for downloading JARs)
 RUN apt-get update && \
-    apt-get install -y default-jre procps curl && \
+    apt-get install -y default-jre procps curl libpq-dev gcc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set JAVA_HOME environment variable so PySpark can find the JVM
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
-# Create the JARs directory and download the AWS/Hadoop drivers directly into the image
 RUN mkdir -p /opt/airflow/jars && \
     curl -o /opt/airflow/jars/hadoop-aws-3.3.4.jar https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar && \
     curl -o /opt/airflow/jars/aws-java-sdk-bundle-1.12.262.jar https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar && \
     chmod -R 777 /opt/airflow/jars
 
-# Switch back to the airflow user to install Python packages
 USER airflow
 
-# Install Python dependencies (PySpark, Great Expectations, dbt, etc.)
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir pyspark==3.5.1
 RUN pip install --no-cache-dir \
@@ -32,4 +26,5 @@ RUN pip install --no-cache-dir \
     sqlalchemy \
     psycopg2-binary \
     pandas \
+    dbt-core \
     dbt-postgres

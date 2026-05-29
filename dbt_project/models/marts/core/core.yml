@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: dim_vehicles
+    description: ""
+    columns:
+      - name: vehicle_id
+        description: ""
+        tests:
+          - unique
+          - not_null
+      - name: capacity_kg
+        description: ""

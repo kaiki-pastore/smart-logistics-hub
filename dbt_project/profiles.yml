@@ -3,9 +3,9 @@ logistics_pg:
   outputs:
     dev:
       type: postgres
-      host: localhost
-      user: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
+      host: postgres
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
       port: 5432
       dbname: gold_db
       schema: public
