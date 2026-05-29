@@ -27,4 +27,5 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     pandas \
     dbt-core \
-    dbt-postgres
+    dbt-postgres \
+    s3fs
