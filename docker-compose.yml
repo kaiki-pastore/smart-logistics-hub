@@ -50,12 +50,15 @@ services:
       - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
       - SPARK_MINIO_USER=${SPARK_MINIO_USER}
       - SPARK_MINIO_PASSWORD=${SPARK_MINIO_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "8080:8080"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
       - ./jobs:/opt/airflow/jobs
+      - ./dbt_project:/opt/airflow/dbt_project
     command: >
       bash -c " airflow db migrate &&
       airflow users create --username ${AIRFLOW_USER} --password ${AIRFLOW_PASSWORD} --firstname Admin --lastname User --role Admin --email admin@example.com &&
