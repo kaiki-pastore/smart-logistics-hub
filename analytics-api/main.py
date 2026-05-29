@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 import duckdb
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 import os
 
 con = duckdb.connect()
@@ -8,10 +8,10 @@ con = duckdb.connect()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Startup event: Installs and configures the 'httpfs' extension 
-    allowing DuckDB to natively read Parquet files directly from MinIO.
+    Startup Configuration: Installs and configures the 'httpfs' extension
+    allowing DuckDB to natively read Parquet files directly from MinIO/S3.
     """
-    print("Configuring DuckDB S3/MinIO connection...")
+    print("🚀 Setting up DuckDB connection to S3/MinIO...")
     con.execute("INSTALL httpfs;")
     con.execute("LOAD httpfs;")
     con.execute("SET s3_endpoint='minio:9000';")
@@ -20,31 +20,55 @@ async def lifespan(app: FastAPI):
     con.execute("SET s3_use_ssl=false;")
     con.execute("SET s3_url_style='path';")
     yield
-    print("Shutting down Analytics API...")
+    print("🛑 Disconnecting Analytics API...")
     con.close()
 
 app = FastAPI(
     title="Analytics API - Smart Logistics Hub",
-    description="Serves Gold layer business metrics directly from the Data Lake.",
+    description="Provides business metrics from the Gold layer directly from the Data Lake using DuckDB.",
     lifespan=lifespan
 )
 
 @app.get("/api/v1/metrics/fleet")
-def get_fleet_metrics():
-    """Returns the average daily cargo temperature for each vehicle."""
-    query = """
-        SELECT * FROM read_parquet('s3://gold/daily_fleet_metrics/*.parquet') 
-        ORDER BY date DESC, vehicle_id
+def get_fleet_metrics(status: str = Query(None)):
     """
-    result = con.execute(query).fetchdf()
-    return result.to_dict(orient="records")
-
-@app.get("/api/v1/metrics/inventory")
-def get_inventory_summary():
-    """Returns the total weight and order count grouped by export date."""
+    Returns consolidated fleet performance and temperature metrics
+    by performing an in-memory JOIN between the Fact and Vehicle Dimension tables.
+    """
     query = """
-        SELECT * FROM read_parquet('s3://gold/daily_inventory_summary/*.parquet') 
-        ORDER BY export_date DESC
+        SELECT 
+            TRIM(UPPER(v.vehicle_id)) as vehicle_id,
+            v.capacity_kg,
+            COUNT(f.event_timestamp) as total_telemetry_events,
+            ROUND(AVG(f.cargo_temp_c), 2) as avg_cargo_temperature
+        FROM read_parquet('s3://gold/delivery_fact/*.parquet') f
+        JOIN read_parquet('s3://gold/dim_vehicles/*.parquet') v 
+          ON TRIM(UPPER(f.vehicle_id)) = TRIM(UPPER(v.vehicle_id))
+    """
+    
+    if status:
+        query += f" WHERE TRIM(UPPER(f.delivery_status)) = TRIM(UPPER('{status}'))"
+            
+        query += " GROUP BY TRIM(UPPER(v.vehicle_id)), v.capacity_kg ORDER BY total_telemetry_events DESC"
+        
+        result = con.execute(query).fetchdf()
+        return result.to_dict(orient="records")
+
+@app.get("/api/v1/metrics/alerts")
+def get_temperature_alerts():
+    """
+    Returns vehicles that operated above the safe 
+    temperature limit to ensure cargo quality control.
+    """
+    query = """
+        SELECT 
+            vehicle_id,
+            COUNT(*) as total_alerts,
+            ROUND(AVG(cargo_temp_c), 2) as alert_avg_temperature
+        FROM read_parquet('s3://gold/delivery_fact/*.parquet')
+        WHERE cargo_temp_c > 12.0
+        GROUP BY vehicle_id
+        ORDER BY total_alerts DESC
     """
     result = con.execute(query).fetchdf()
     return result.to_dict(orient="records")
