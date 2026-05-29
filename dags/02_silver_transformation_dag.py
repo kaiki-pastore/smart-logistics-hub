@@ -7,7 +7,7 @@ default_args = {
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 0, # Definimos 0 retries para falhar rápido se o dado for ruim
+    'retries': 0,
     'retry_delay': timedelta(minutes=2),
 }
 
@@ -23,7 +23,7 @@ with DAG(
 
     run_quality_checks = BashOperator(
         task_id='run_data_quality_checks',
-        bash_command='rm -rf /home/airflow/.ivy2 && python /opt/airflow/jobs/quality_checks.py'
+        bash_command='python /opt/airflow/jobs/quality_checks.py'
     )
 
     run_silver_spark_job = BashOperator(
