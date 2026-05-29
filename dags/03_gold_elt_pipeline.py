@@ -36,4 +36,9 @@ with DAG(
         bash_command='cd /opt/airflow/dbt_project && dbt test --profiles-dir . --debug'
     )
 
-    load_silver_to_postgres >> run_dbt_models >> test_dbt_models
+    publish_to_data_lake = BashOperator(
+        task_id='publish_gold_to_minio',
+        bash_command='python /opt/airflow/jobs/unload_gold_to_minio.py'
+    )
+
+    load_silver_to_postgres >> run_dbt_models >> test_dbt_models >> publish_to_data_lake
