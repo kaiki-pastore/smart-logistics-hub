@@ -10,3 +10,5 @@ sources:
         description: "Raw GPS and sensor telemetry data from the fleet."
       - name: raw_inventory
         description: "Raw warehouse inventory and order data."
+      - name: raw_fleet
+        description: "Raw static fleet data"
