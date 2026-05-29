@@ -28,12 +28,12 @@ with DAG(
 
     run_dbt_models = BashOperator(
         task_id='run_dbt_models',
-        bash_command='cd /opt/airflow/dbt_project && dbt run --profiles-dir .'
+        bash_command='cd /opt/airflow/dbt_project && dbt run --profiles-dir . --debug'
     )
 
     test_dbt_models = BashOperator(
         task_id='test_dbt_models',
-        bash_command='cd /opt/airflow/dbt_project && dbt test --profiles-dir .'
+        bash_command='cd /opt/airflow/dbt_project && dbt test --profiles-dir . --debug'
     )
 
     load_silver_to_postgres >> run_dbt_models >> test_dbt_models
