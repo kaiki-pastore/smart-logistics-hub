@@ -1,15 +1,16 @@
+import os
+import sys
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_timestamp, current_timestamp
-import sys
-import os
 
+# --- Configuração de Dependências Nativas ---
+JARS = "/opt/airflow/jars/hadoop-aws-3.3.4.jar,/opt/airflow/jars/aws-java-sdk-bundle-1.12.262.jar"
+
+os.environ['PYSPARK_SUBMIT_ARGS'] = f'--jars {JARS} pyspark-shell'
 os.environ["_JAVA_OPTIONS"] = "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Xmx2g"
 
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262 pyspark-shell'
-
-# 2. Fetch credentials securely
-MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER")
-MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD")
+MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER", "admin")
+MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD", "admin")
 
 spark = SparkSession.builder \
     .appName("Logistics_Silver_Layer") \
@@ -18,22 +19,16 @@ spark = SparkSession.builder \
     .config("spark.hadoop.fs.s3a.secret.key", MINIO_SECRET_KEY) \
     .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") \
     .config("spark.hadoop.fs.s3a.path.style.access", "true") \
-    .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false") \
     .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
 
 def transform_telemetry():
-    """Reads telemetry JSONs from Bronze and saves them as Parquet in Silver."""
     print("Starting Telemetry processing (Bronze -> Silver)...")
-    
     df = spark.read.option("multiline", "true").json("s3a://bronze/telemetry/*.json")
+    if df.isEmpty(): return
     
-    if df.isEmpty():
-        print("No new telemetry data found in Bronze.")
-        return
-
     df_silver = df \
         .withColumn("timestamp", to_timestamp(col("timestamp"))) \
         .withColumn("latitude", col("latitude").cast("float")) \
@@ -44,16 +39,12 @@ def transform_telemetry():
         .dropDuplicates()
 
     df_silver.write.mode("append").parquet("s3a://silver/telemetry/")
-    print(f"✅ Telemetry processed and saved to s3a://silver/telemetry/")
+    print("✅ Telemetry processed and saved.")
 
 def transform_inventory():
-    """Reads inventory JSONs from Bronze and saves them as Parquet in Silver."""
     print("Starting Inventory processing (Bronze -> Silver)...")
-    
     df = spark.read.option("multiline", "true").json("s3a://bronze/inventory/*.json")
-    
-    if df.isEmpty():
-        return
+    if df.isEmpty(): return
 
     df_silver = df \
         .withColumn("weight_kg", col("weight_kg").cast("float")) \
@@ -62,16 +53,12 @@ def transform_inventory():
         .dropna(subset=["order_id"])
 
     df_silver.write.mode("overwrite").parquet("s3a://silver/inventory/")
-    print(f"✅ Inventory processed and saved to s3a://silver/inventory/")
+    print("✅ Inventory processed and saved.")
 
 def transform_fleet():
-    """Reads fleet Parquet from Bronze and saves optimized Parquet in Silver."""
     print("Starting Fleet processing (Bronze -> Silver)...")
-    
     df = spark.read.parquet("s3a://bronze/static/fleet/*.parquet")
-    
-    if df.isEmpty():
-        return
+    if df.isEmpty(): return
 
     df_silver = df \
         .withColumn("capacity_kg", col("capacity_kg").cast("integer")) \
@@ -79,7 +66,7 @@ def transform_fleet():
         .dropna(subset=["vehicle_id"])
 
     df_silver.write.mode("overwrite").parquet("s3a://silver/fleet/")
-    print(f"✅ Fleet processed and saved to s3a://silver/fleet/")
+    print("✅ Fleet processed and saved.")
 
 if __name__ == "__main__":
     try:
@@ -87,7 +74,7 @@ if __name__ == "__main__":
         transform_inventory()
         transform_fleet()
     except Exception as e:
-        print(f"Critical error during Silver processing: {e}")
+        print(f"Critical error: {e}")
         sys.exit(1)
     finally:
         spark.stop()

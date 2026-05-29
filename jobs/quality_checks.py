@@ -3,8 +3,11 @@ from pyspark.sql import SparkSession
 import sys
 import os
 
+# --- Bypass Ivy: Use baked-in JARs ---
+JARS = "/opt/airflow/jars/hadoop-aws-3.3.4.jar,/opt/airflow/jars/aws-java-sdk-bundle-1.12.262.jar"
+
+os.environ['PYSPARK_SUBMIT_ARGS'] = f'--jars {JARS} pyspark-shell'
 os.environ["_JAVA_OPTIONS"] = "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Xmx2g"
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262 pyspark-shell'
 
 MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER", "admin")
 MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD", "admin")
@@ -30,10 +33,28 @@ def validate_telemetry_bronze():
     if df_raw.isEmpty():
         print("No telemetry data to validate.")
         return
-
-    context = gx.get_context(mode="ephemeral")
     
     from great_expectations.dataset.sparkdf_dataset import SparkDFDataset
     gx_df = SparkDFDataset(df_raw)
+    
+    print("Running Expectation 1: Latitude and Longitude must not be null")
+    res_lat = gx_df.expect_column_values_to_not_be_null("latitude")
+    res_lon = gx_df.expect_column_values_to_not_be_null("longitude")
+    
+    print("Running Expectation 2: Cargo temperature must be physically possible (-50 to 100)")
+    res_temp = gx_df.expect_column_values_to_be_between("cargo_temperature", -50, 100)
 
-    # 3.
+    if not res_lat["success"] or not res_lon["success"] or not res_temp["success"]:
+        print("❌ CRITICAL: Bad data detected in Bronze layer.")
+        raise ValueError("Data Quality Gates failed! Pipeline execution aborted to protect the Data Lake.")
+        
+    print("✅ All Data Quality Checks Passed. Ready for Silver Transformation.")
+
+if __name__ == "__main__":
+    try:
+        validate_telemetry_bronze()
+    except Exception as e:
+        print(f"Quality Check Failed: {e}")
+        sys.exit(1)
+    finally:
+        spark.stop()
