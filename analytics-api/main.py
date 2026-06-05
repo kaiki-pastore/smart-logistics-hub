@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 import duckdb
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 import os
 
 con = duckdb.connect()
@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
     print("🚀 Setting up DuckDB connection to S3/MinIO...")
     con.execute("INSTALL httpfs;")
     con.execute("LOAD httpfs;")
-    con.execute("SET s3_endpoint='minio:9000';")
+    con.execute("SET s3_endpoint='logistics_minio:9000';") # Ajustado para o nome do container na rede
     con.execute(f"SET s3_access_key_id='{os.getenv('MINIO_ACCESS_KEY', 'admin')}';")
     con.execute(f"SET s3_secret_access_key='{os.getenv('MINIO_SECRET_KEY', 'admin')}';")
     con.execute("SET s3_use_ssl=false;")
@@ -39,20 +39,25 @@ def get_fleet_metrics(status: str = Query(None)):
         SELECT 
             TRIM(UPPER(v.vehicle_id)) as vehicle_id,
             v.capacity_kg,
-            COUNT(f.event_timestamp) as total_telemetry_events,
+            COUNT(f.timestamp) as total_telemetry_events,
             ROUND(AVG(f.cargo_temp_c), 2) as avg_cargo_temperature
-        FROM read_parquet('s3://gold/delivery_fact/*.parquet') f
-        JOIN read_parquet('s3://gold/dim_vehicles/*.parquet') v 
+        FROM read_parquet('s3://silver/telemetry_history/*/*.parquet') f
+        JOIN read_parquet('s3://gold/dim_vehicles_snapshots/*/*.parquet') v 
           ON TRIM(UPPER(f.vehicle_id)) = TRIM(UPPER(v.vehicle_id))
     """
     
+    params = []
     if status:
-        query += f" WHERE TRIM(UPPER(f.delivery_status)) = TRIM(UPPER('{status}'))"
+        query += " WHERE TRIM(UPPER(f.delivery_status)) = TRIM(UPPER(?))"
+        params.append(status)
             
-        query += " GROUP BY TRIM(UPPER(v.vehicle_id)), v.capacity_kg ORDER BY total_telemetry_events DESC"
-        
-        result = con.execute(query).fetchdf()
+    query += " GROUP BY TRIM(UPPER(v.vehicle_id)), v.capacity_kg ORDER BY total_telemetry_events DESC"
+    
+    try:
+        result = con.execute(query, params).fetchdf()
         return result.to_dict(orient="records")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DuckDB Query Error: {str(e)}")
 
 @app.get("/api/v1/metrics/alerts")
 def get_temperature_alerts():
@@ -65,10 +70,13 @@ def get_temperature_alerts():
             vehicle_id,
             COUNT(*) as total_alerts,
             ROUND(AVG(cargo_temp_c), 2) as alert_avg_temperature
-        FROM read_parquet('s3://gold/delivery_fact/*.parquet')
+        FROM read_parquet('s3://silver/telemetry_history/*/*.parquet')
         WHERE cargo_temp_c > 12.0
         GROUP BY vehicle_id
         ORDER BY total_alerts DESC
     """
-    result = con.execute(query).fetchdf()
-    return result.to_dict(orient="records")
+    try:
+        result = con.execute(query).fetchdf()
+        return result.to_dict(orient="records")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DuckDB Query Error: {str(e)}")
