@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'dbt_project/**'
+      - '.github/workflows/**'
 
 jobs:
   dbt-build-and-test:
@@ -58,9 +59,9 @@ jobs:
           EOF
 
       - name: 📚 Run dbt deps
-        run: dbt deps
+        run: dbt deps --profiles-dir ~/.dbt
         working-directory: ./dbt_project
 
       - name: 🏗️ Run dbt build (Compile, Run & Test)
-        run: dbt build --target ci
+        run: dbt build --target ci --profiles-dir ~/.dbt
         working-directory: ./dbt_project
