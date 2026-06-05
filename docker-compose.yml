@@ -92,9 +92,23 @@ services:
       - logistics_net
       - data_network
 
+  metabase:
+    image: metabase/metabase:v0.49.13
+    container_name: logistics_metabase
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    networks:
+      - data_network
+    depends_on:
+      postgres:
+        condition: service_started
+
 volumes:
   pg_data:
   minio_data:
+  metabase_data:
 
 networks:
   data_network:
