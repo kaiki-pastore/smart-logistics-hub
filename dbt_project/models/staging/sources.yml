@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: erp_source
+    schema: public
+    tables:
+      - name: raw_vehicles
+      - name: raw_drivers
+      - name: raw_telemetry
+      - name: raw_orders

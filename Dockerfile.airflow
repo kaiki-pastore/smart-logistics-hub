@@ -3,11 +3,11 @@ FROM apache/airflow:2.9.1-python3.12
 USER root
 
 RUN apt-get update && \
-    apt-get install -y default-jre procps curl libpq-dev gcc && \
+    apt-get install -y default-jre openjdk-17-jdk procps curl libpq-dev gcc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-ENV JAVA_HOME=/usr/lib/jvm/default-java
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 RUN mkdir -p /opt/airflow/jars && \
     curl -o /opt/airflow/jars/hadoop-aws-3.3.4.jar https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar && \
@@ -17,7 +17,7 @@ RUN mkdir -p /opt/airflow/jars && \
 USER airflow
 
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir pyspark==3.5.1
+RUN pip install --no-cache-dir pyspark==3.4.1
 RUN pip install --no-cache-dir \
     boto3 \
     requests \
@@ -26,6 +26,7 @@ RUN pip install --no-cache-dir \
     sqlalchemy \
     psycopg2-binary \
     pandas \
-    dbt-core \
-    dbt-postgres \
+    apache-airflow-providers-amazon \
+    dbt-core==1.8.0 \
+    dbt-postgres==1.8.0 \
     s3fs

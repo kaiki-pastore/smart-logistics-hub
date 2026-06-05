@@ -3,17 +3,19 @@ from pyspark.sql import SparkSession
 import sys
 import os
 
-# --- Bypass Ivy: Use baked-in JARs ---
 JARS = "/opt/airflow/jars/hadoop-aws-3.3.4.jar,/opt/airflow/jars/aws-java-sdk-bundle-1.12.262.jar"
 
 os.environ['PYSPARK_SUBMIT_ARGS'] = f'--jars {JARS} pyspark-shell'
-os.environ["_JAVA_OPTIONS"] = "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Xmx2g"
 
 MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER", "admin")
 MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD", "admin")
 
 spark = SparkSession.builder \
     .appName("Logistics_Data_Quality") \
+    .config("spark.driver.memory", "512m") \
+    .config("spark.executor.memory", "512m") \
+    .config("spark.memory.offHeap.enabled", "true") \
+    .config("spark.memory.offHeap.size", "512m") \
     .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000") \
     .config("spark.hadoop.fs.s3a.access.key", MINIO_ACCESS_KEY) \
     .config("spark.hadoop.fs.s3a.secret.key", MINIO_SECRET_KEY) \

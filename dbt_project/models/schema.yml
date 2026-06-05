@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: dim_vehicles
+    description: "Master dimension table for the logistics fleet."
+    columns:
+      - name: vehicle_id
+        description: "Unique identifier for each vehicle."
+        tests:
+          - unique
+          - not_null
+      - name: capacity_kg
+        description: "Maximum payload capacity in kilograms."
+        tests:
+          - not_null
+
+  - name: dim_drivers
+    description: "Master dimension table for active drivers."
+    columns:
+      - name: driver_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_telemetry
+    description: "Transactional fact table containing real-time IoT events from the fleet."
+    columns:
+      - name: event_id
+        tests:
+          - unique
+          - not_null
+      - name: vehicle_id
+        description: "Foreign key joining to dim_vehicles."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_vehicles')
+              field: vehicle_id
+
+  - name: fact_orders
+    description: "Transactional fact table for warehouse dispatch orders."
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: destination_lat
+        tests:
+          - not_null
