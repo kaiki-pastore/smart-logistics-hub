@@ -8,7 +8,6 @@ JARS = "/opt/airflow/jars/hadoop-aws-3.3.4.jar,/opt/airflow/jars/aws-java-sdk-bu
 os.environ['PYSPARK_SUBMIT_ARGS'] = f'--jars {JARS} pyspark-shell'
 os.environ["_JAVA_OPTIONS"] = "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Xmx2g"
 
-# --- Credentials ---
 MINIO_ACCESS_KEY = os.getenv("SPARK_MINIO_USER", "admin")
 MINIO_SECRET_KEY = os.getenv("SPARK_MINIO_PASSWORD", "admin")
 PG_USER = os.getenv("POSTGRES_USER", "admin")
@@ -38,6 +37,7 @@ def write_to_postgres(df, table_name, mode):
         .option("user", PG_USER) \
         .option("password", PG_PASSWORD) \
         .option("driver", "org.postgresql.Driver") \
+        .option("truncate", "true") \
         .mode(mode) \
         .save()
 
