@@ -58,6 +58,18 @@ jobs:
                 threads: 4
           EOF
 
+      # NOVO PASSO: Cria as tabelas vazias para o dbt conseguir compilar
+      - name: 🗄️ Mock Raw Tables (Silver Layer) for CI
+        env:
+          PGPASSWORD: admin
+        run: |
+          psql -h localhost -U admin -d postgres -c "
+          CREATE TABLE public.raw_vehicles (vehicle_id VARCHAR, capacity_kg INT, ingestion_date TIMESTAMP);
+          CREATE TABLE public.raw_drivers (driver_id VARCHAR, ingestion_date TIMESTAMP);
+          CREATE TABLE public.raw_telemetry (event_id VARCHAR, vehicle_id VARCHAR, timestamp TIMESTAMP, latitude FLOAT, longitude FLOAT, cargo_temp_c FLOAT, speed_kmh FLOAT, delivery_status VARCHAR, ingestion_date TIMESTAMP);
+          CREATE TABLE public.raw_orders (order_id VARCHAR, created_at TIMESTAMP, weight_kg FLOAT, destination_lat FLOAT, destination_lon FLOAT, ingestion_date TIMESTAMP);
+          "
+
       - name: 📚 Run dbt deps
         run: dbt deps --profiles-dir ~/.dbt
         working-directory: ./dbt_project
