@@ -1,2 +1,0 @@
-CREATE DATABASE airflow_db;
-CREATE DATABASE gold_db;
