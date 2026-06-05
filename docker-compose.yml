@@ -9,7 +9,6 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - data_network
 
@@ -47,7 +46,8 @@ services:
     container_name: logistics_airflow
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_db
+      # Alterado para apontar para o banco padrão 'postgres' em vez de 'airflow_db'
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/postgres
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
       - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
@@ -59,7 +59,6 @@ services:
       - "8080:8080"
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./data:/opt/airflow/data
       - ./jobs:/opt/airflow/jobs
       - ./dbt_project:/opt/airflow/dbt_project
     command: >

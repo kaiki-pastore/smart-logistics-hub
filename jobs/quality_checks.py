@@ -44,7 +44,7 @@ def validate_telemetry_bronze():
     res_lon = gx_df.expect_column_values_to_not_be_null("longitude")
     
     print("Running Expectation 2: Cargo temperature must be physically possible (-50 to 100)")
-    res_temp = gx_df.expect_column_values_to_be_between("cargo_temperature", -50, 100)
+    res_temp = gx_df.expect_column_values_to_be_between("cargo_temp_c", -50.0, 100.0)
 
     if not res_lat["success"] or not res_lon["success"] or not res_temp["success"]:
         print("❌ CRITICAL: Bad data detected in Bronze layer.")
