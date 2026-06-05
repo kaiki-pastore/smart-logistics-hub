@@ -64,7 +64,7 @@ jobs:
         run: |
           psql -h localhost -U admin -d postgres -c "
           CREATE TABLE public.raw_vehicles (vehicle_id VARCHAR, vehicle_type VARCHAR, capacity_kg INT, status VARCHAR, ingestion_date TIMESTAMP);
-          CREATE TABLE public.raw_drivers (driver_id VARCHAR, name VARCHAR, license_type VARCHAR, ingestion_date TIMESTAMP);
+          CREATE TABLE public.raw_drivers (driver_id VARCHAR, name VARCHAR, license_type VARCHAR, status VARCHAR, ingestion_date TIMESTAMP);
           CREATE TABLE public.raw_telemetry (event_id VARCHAR, vehicle_id VARCHAR, timestamp TIMESTAMP, latitude FLOAT, longitude FLOAT, cargo_temp_c FLOAT, speed_kmh FLOAT, delivery_status VARCHAR, ingestion_date TIMESTAMP);
           CREATE TABLE public.raw_orders (order_id VARCHAR, product_name VARCHAR, status VARCHAR, created_at TIMESTAMP, weight_kg FLOAT, destination_lat FLOAT, destination_lon FLOAT, ingestion_date TIMESTAMP);
           "
