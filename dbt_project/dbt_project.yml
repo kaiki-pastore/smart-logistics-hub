@@ -20,4 +20,4 @@ models:
     marts:
       +materialized: table
 
-# Trigger CI/CD pipeline
+# Trigger CI/CD pipeline 
