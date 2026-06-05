@@ -1,0 +1,66 @@
+name: dbt CI/CD Data Quality Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'dbt_project/**'
+
+jobs:
+  dbt-build-and-test:
+    name: Run dbt build & tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Install dbt-postgres
+        run: pip install dbt-core==1.8.0 dbt-postgres==1.8.0
+
+      - name: ⚙️ Configure dbt profiles.yml for CI
+        run: |
+          mkdir -p ~/.dbt
+          cat <<EOF > ~/.dbt/profiles.yml
+          dbt_project:
+            target: ci
+            outputs:
+              ci:
+                type: postgres
+                host: localhost
+                user: admin
+                password: admin
+                port: 5432
+                dbname: postgres
+                schema: dbt_ci_schema
+                threads: 4
+          EOF
+
+      - name: 📚 Run dbt deps
+        run: dbt deps
+        working-directory: ./dbt_project
+
+      - name: 🏗️ Run dbt build (Compile, Run & Test)
+        run: dbt build --target ci
+        working-directory: ./dbt_project
