@@ -39,7 +39,7 @@ jobs:
       - name: 📦 Install dbt-postgres
         run: pip install dbt-core==1.8.0 dbt-postgres==1.8.0
 
-  name: ⚙️ Configure dbt profiles.yml for CI
+      - name: ⚙️ Configure dbt profiles.yml for CI
         run: |
           mkdir -p ~/.dbt
           cat <<EOF > ~/.dbt/profiles.yml
