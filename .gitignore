@@ -217,13 +217,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Segredos e Configurações Locais Extras
+# Secrets and Extra Local Configurations
 *.env
 credentials.json
 secret.yaml
 
-# Dados Locais (Data Lake Simulado)
-# Ignora arquivos de dados, mas mantém a estrutura de pastas no GitHub
+# Local Data (Simulated Data Lake)
+# Ignore data files, but keep folder structure on GitHub
 data/bronze/*
 !data/bronze/.gitkeep
 data/silver/*
