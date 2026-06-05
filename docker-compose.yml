@@ -34,6 +34,9 @@ services:
     container_name: logistics_api
     ports:
       - "8000:8000"
+    volumes:
+      - ./api-mock:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - data_network
 
@@ -82,10 +85,14 @@ services:
     environment:
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./analytics-api:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
     depends_on:
       - minio
     networks:
       - logistics_net
+      - data_network
 
 volumes:
   pg_data:

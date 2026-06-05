@@ -1,9 +1,8 @@
-with source as (
-    select * from {{ source('postgres_raw', 'raw_fleet') }}
-)
+{{ config(materialized='table') }}
 
 select
-    cast(vehicle_id as varchar) as vehicle_id,
-    cast(capacity_kg as integer) as capacity_kg,
-    cast(ingestion_date as timestamp) as loaded_at
-from source
+    vehicle_id,
+    vehicle_type,
+    capacity_kg,
+    vehicle_status
+from {{ ref('stg_vehicles') }}

@@ -8,37 +8,27 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(minutes=2),
+    'retry_delay': timedelta(minutes=5),
 }
 
 with DAG(
-    '03_gold_elt_pipeline',
+    '03_gold_transformation_dbt',
     default_args=default_args,
-    description='Loads Silver data to Postgres and runs dbt transformations for the Gold layer',
-    schedule_interval=timedelta(minutes=30), # Runs after Silver
+    description='Runs dbt to build the Star Schema (Gold Layer)',
+    schedule_interval=timedelta(minutes=15),
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=['gold', 'pyspark', 'dbt', 'elt'],
+    tags=['gold', 'dbt', 'analytics'],
 ) as dag:
 
-    load_silver_to_postgres = BashOperator(
-        task_id='load_silver_to_postgres',
-        bash_command='python /opt/airflow/jobs/load_silver_to_postgres.py'
+    dbt_run = BashOperator(
+        task_id='dbt_run_models',
+        bash_command='cd /opt/airflow/dbt_project && dbt run --profiles-dir .',
     )
 
-    run_dbt_models = BashOperator(
-        task_id='run_dbt_models',
-        bash_command='cd /opt/airflow/dbt_project && dbt run --profiles-dir . --debug'
+    dbt_test = BashOperator(
+        task_id='dbt_test_data_quality',
+        bash_command='cd /opt/airflow/dbt_project && dbt test --profiles-dir .',
     )
 
-    test_dbt_models = BashOperator(
-        task_id='test_dbt_models',
-        bash_command='cd /opt/airflow/dbt_project && dbt test --profiles-dir . --debug'
-    )
-
-    publish_to_data_lake = BashOperator(
-        task_id='publish_gold_to_minio',
-        bash_command='python /opt/airflow/jobs/unload_gold_to_minio.py'
-    )
-
-    load_silver_to_postgres >> run_dbt_models >> test_dbt_models >> publish_to_data_lake
+    dbt_run >> dbt_test
