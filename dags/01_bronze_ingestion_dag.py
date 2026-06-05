@@ -31,9 +31,8 @@ def ingest_master_data(endpoint, s3_prefix):
     data = response.json()
     
     if not data:
-        raise ValueError(f"🚨 A API não retornou dados para {endpoint}! Falhando a task para evitar falsos positivos.")
+        raise ValueError(f"🚨 The API returned no data for {endpoint}! Failing the task to avoid false positives.")
     
-    # Ajustado para salvar direto na raiz do bucket (combinando com o Spark)
     date_str = datetime.now().strftime("%Y%m%d")
     file_key = f"{s3_prefix}/{s3_prefix}_{date_str}.json"
     
@@ -55,9 +54,8 @@ def ingest_stream_data(endpoint, s3_prefix, batch_size):
             batch_data.append(response.json())
             
     if not batch_data:
-        raise ValueError(f"🚨 A API não retornou dados de stream para {endpoint}! Falhando a task.")
+        raise ValueError(f"🚨 The API returned no stream data for {endpoint}! Failing the task.")
 
-    # Ajustado para salvar direto na raiz do bucket
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_key = f"{s3_prefix}/batch_{timestamp_str}.json"
     
